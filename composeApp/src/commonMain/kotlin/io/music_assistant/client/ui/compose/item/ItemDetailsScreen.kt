@@ -537,6 +537,7 @@ private fun TabsBar(
         SubItemContext.ARTIST_TRACKS,
         SubItemContext.ALBUM_TRACKS,
         SubItemContext.PLAYLIST_ITEMS,
+        SubItemContext.RADIO_TRACKS,
         SubItemContext.PODCAST_EPISODES,
         SubItemContext.COLLECTION_ITEMS,
         SubItemContext.ARTIST_TOP_TRACKS,
@@ -645,6 +646,7 @@ private fun TabContent(
 
         ItemDetailsTab.ALBUM_TRACKS,
         ItemDetailsTab.PLAYLIST_ITEMS,
+        ItemDetailsTab.RADIO_TRACKS,
         ItemDetailsTab.PODCAST_EPISODES,
         ItemDetailsTab.COLLECTION_ITEMS,
             -> PlayablesTabContent(

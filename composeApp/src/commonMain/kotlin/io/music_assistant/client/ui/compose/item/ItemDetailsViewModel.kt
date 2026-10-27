@@ -23,6 +23,7 @@ import io.music_assistant.client.data.model.client.items.PlayableItem
 import io.music_assistant.client.data.model.client.items.Playlist
 import io.music_assistant.client.data.model.client.items.Podcast
 import io.music_assistant.client.data.model.client.items.PodcastEpisode
+import io.music_assistant.client.data.model.client.items.RadioStation
 import io.music_assistant.client.data.model.client.items.RecommendationFolder
 import io.music_assistant.client.data.model.client.items.Track
 import io.music_assistant.client.data.play.PlayDispatcher
@@ -74,12 +75,26 @@ class ItemDetailsViewModel(
         val playableItemsQuery: String? = null,
         /** The user's manual tab choice; null means "follow the auto-selected default". */
         val userSelectedTab: ItemDetailsTab? = null,
+        val radioTracksSupported: Boolean = false,
     ) {
         /** Tabs derive purely from the loaded item, so there's nothing to store or keep in sync. */
         val tabs: List<ItemDetailsTab>
             get() = itemOrNull()?.let { item ->
-                tabsFor(item).filterNot {
-                    it == ItemDetailsTab.SIMILAR_TRACKS && similarTracksState is DataState.NoData
+                tabsFor(item).filterNot { tab ->
+                    when (tab) {
+                        ItemDetailsTab.SIMILAR_TRACKS ->
+                            similarTracksState is DataState.NoData
+
+                        ItemDetailsTab.RADIO_TRACKS -> {
+                            val radio = item as? RadioStation
+                            radio == null ||
+                                    !radioTracksSupported ||
+                                    radio.isEndless != false ||
+                                    radio.isDynamic == true
+                        }
+
+                        else -> false
+                    }
                 }
             } ?: emptyList()
 
@@ -190,6 +205,7 @@ class ItemDetailsViewModel(
             MediaType.ARTIST -> Request.Artist.get(itemId, providerId)
             MediaType.ALBUM -> Request.Album.get(itemId, providerId)
             MediaType.PLAYLIST -> Request.Playlist.get(itemId, providerId)
+            MediaType.RADIO -> Request.RadioStation.get(itemId, providerId)
             MediaType.PODCAST -> Request.Podcast.get(itemId, providerId)
             MediaType.AUDIOBOOK -> Request.Audiobook.get(itemId, providerId)
             MediaType.GENRE -> Request.Genre.get(itemId, providerId)
@@ -230,6 +246,29 @@ class ItemDetailsViewModel(
                     )
                 }
                 loadPlaylistTracks(item.itemId, item.provider)
+            }
+            is RadioStation -> {
+                val supportsRadioTracks = mediaItemRepository.supportsRadioTracks()
+
+                _state.update {
+                    it.copy(
+                        albumsState = DataState.NoData(),
+                        albumsSortOption = null,
+                        playableItemsSortOption =
+                            settingsRepository.getSortOption(SubItemContext.RADIO_TRACKS),
+                        radioTracksSupported = supportsRadioTracks,
+                    )
+                }
+
+                if (
+                    supportsRadioTracks &&
+                    item.isEndless == false &&
+                    item.isDynamic != true
+                ) {
+                    loadRadioTracks(item.itemId, item.provider)
+                } else {
+                    setPlayableItemsState(DataState.NoData())
+                }
             }
 
             is Podcast -> {
@@ -346,6 +385,33 @@ class ItemDetailsViewModel(
                 setPlayableItems(tracks, SubItemContext.PLAYLIST_ITEMS)
             } catch (e: Exception) {
                 Logger.e("Failed to load playlist tracks", e)
+                setPlayableItemsState(DataState.Error())
+            }
+        }
+    }
+
+
+    private fun loadRadioTracks(
+        itemId: String,
+        provider: String,
+    ) {
+        viewModelScope.launch {
+            setPlayableItemsState(DataState.Loading())
+
+            try {
+                val tracks = mediaItemRepository.fetchMediaItems(
+                    Request.RadioStation.getTracks(
+                        itemId = itemId,
+                        providerInstanceIdOrDomain = provider,
+                    ),
+                )
+                    .getOrNull()
+                    ?.filterIsInstance<PlayableItem>()
+                    ?: emptyList()
+
+                setPlayableItems(tracks, SubItemContext.RADIO_TRACKS)
+            } catch (e: Exception) {
+                Logger.e("Failed to load radio tracks", e)
                 setPlayableItemsState(DataState.Error())
             }
         }
@@ -692,6 +758,7 @@ private fun ItemDetailsTab.subState(
     ItemDetailsTab.SIMILAR_TRACKS -> state.similarTracksState
     ItemDetailsTab.ALBUM_TRACKS,
     ItemDetailsTab.PLAYLIST_ITEMS,
+    ItemDetailsTab.RADIO_TRACKS,
     ItemDetailsTab.PODCAST_EPISODES,
     ItemDetailsTab.COLLECTION_ITEMS,
         -> state.playableItemsState

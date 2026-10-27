@@ -51,6 +51,7 @@ object APICommands {
 
     // Radio Station commands
     const val MUSIC_RADIOS_LIBRARY_ITEMS = "music/radios/library_items"
+    const val MUSIC_RADIOS_RADIO_TRACKS = "music/radios/radio_tracks"
 
     // Audiobook commands
     const val MUSIC_AUDIOBOOKS_LIBRARY_ITEMS = "music/audiobooks/library_items"

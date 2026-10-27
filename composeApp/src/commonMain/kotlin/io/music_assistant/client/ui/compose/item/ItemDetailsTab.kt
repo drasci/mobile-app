@@ -10,6 +10,7 @@ import io.music_assistant.client.data.model.client.items.MediaCollection
 import io.music_assistant.client.data.model.client.items.Playlist
 import io.music_assistant.client.data.model.client.items.Podcast
 import io.music_assistant.client.data.model.client.items.Track
+import io.music_assistant.client.data.model.client.items.RadioStation
 
 /**
  * The tabs an item-details screen can show. [sortContext] drives the sort chip (null = no sorting);
@@ -22,6 +23,7 @@ enum class ItemDetailsTab(
 ) {
     ALBUM_TRACKS(SubItemContext.ALBUM_TRACKS, MediaType.TRACK),
     PLAYLIST_ITEMS(SubItemContext.PLAYLIST_ITEMS, MediaType.TRACK),
+    RADIO_TRACKS(SubItemContext.RADIO_TRACKS, MediaType.TRACK),
     PODCAST_EPISODES(SubItemContext.PODCAST_EPISODES, MediaType.TRACK),
     COLLECTION_ITEMS(SubItemContext.COLLECTION_ITEMS, MediaType.TRACK),
     AUDIOBOOK_CHAPTERS(null, null),
@@ -35,6 +37,7 @@ enum class ItemDetailsTab(
 fun tabsFor(item: AppMediaItem): List<ItemDetailsTab> = when (item) {
     is Album -> listOf(ItemDetailsTab.ALBUM_TRACKS)
     is Playlist -> listOf(ItemDetailsTab.PLAYLIST_ITEMS)
+    is RadioStation -> listOf(ItemDetailsTab.RADIO_TRACKS)
     is Podcast -> listOf(ItemDetailsTab.PODCAST_EPISODES)
     is Audiobook -> listOf(ItemDetailsTab.AUDIOBOOK_CHAPTERS)
     is MediaCollection -> listOf(ItemDetailsTab.COLLECTION_ITEMS)
@@ -54,6 +57,7 @@ private val ITEM_DETAILS_TYPES = setOf(
     MediaType.ARTIST,
     MediaType.ALBUM,
     MediaType.PLAYLIST,
+    MediaType.RADIO,
     MediaType.PODCAST,
     MediaType.AUDIOBOOK,
     MediaType.GENRE,

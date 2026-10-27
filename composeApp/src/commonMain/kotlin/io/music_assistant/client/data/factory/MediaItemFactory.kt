@@ -175,6 +175,7 @@ class MediaItemFactory(
                 version = version,
                 isPlayable = isPlayable == true,
                 isDynamic = isDynamic == true,
+                isEndless = isEndless,
                 position = intPosition,
             )
 

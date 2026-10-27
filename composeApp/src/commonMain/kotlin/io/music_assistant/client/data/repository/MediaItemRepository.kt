@@ -21,6 +21,7 @@ import io.music_assistant.client.data.model.server.pagesPlaylistTracksAndEpisode
 import io.music_assistant.client.data.model.server.sendsFavoriteUpdates
 import io.music_assistant.client.ui.compose.common.getOrEmptyList
 import io.music_assistant.client.utils.HasConnectionData
+import io.music_assistant.client.data.model.server.SERVER_2_11_SCHEMA
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -55,6 +56,7 @@ interface MediaItemRepository {
 
     /** The lyrics the server finds for [track]; `Result.success(null)` when it has none. */
     suspend fun fetchTrackLyrics(track: Track): Result<Lyrics?>
+    fun supportsRadioTracks(): Boolean
     fun publishLocalChange(change: MediaItemChange)
 }
 
@@ -104,6 +106,9 @@ class ServiceClientMediaItemRepository(
 
     private fun schemaVersion(): Int? =
         (apiClient.sessionState.value as? HasConnectionData)?.serverInfo?.schemaVersion
+
+    override fun supportsRadioTracks(): Boolean =
+        schemaVersion()?.let { it >= SERVER_2_11_SCHEMA } == true
 
     /**
      * Issue [request] and decode its payload as a single client media item.
