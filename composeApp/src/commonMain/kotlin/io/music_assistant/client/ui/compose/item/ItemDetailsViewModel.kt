@@ -36,6 +36,7 @@ import io.music_assistant.client.data.repository.favoriteAfter
 import io.music_assistant.client.settings.SettingsRepository
 import io.music_assistant.client.ui.compose.common.DataState
 import io.music_assistant.client.ui.compose.common.map
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,6 +66,7 @@ class ItemDetailsViewModel(
         /** Lazily loaded on demand from the artist overflow menu; NoData until then. */
         val similarArtistsState: DataState<List<Artist>> = DataState.NoData(),
         val trackVersionsState: DataState<List<Track>> = DataState.NoData(),
+        val radioVersionsState: DataState<List<RadioStation>> = DataState.NoData(),
         /** NoData while no provider has [SIMILAR_TRACKS_FEATURE]: then the tab is not shown. */
         val similarTracksState: DataState<List<Track>> = DataState.NoData(),
         /** Lyrics of the loaded [Track]; null for other items and for a track without lyrics. */
@@ -92,7 +94,12 @@ class ItemDetailsViewModel(
                                     radio.isEndless != false ||
                                     radio.isDynamic == true
                         }
-
+                        ItemDetailsTab.RADIO_VERSIONS ->
+                            when (val state = radioVersionsState) {
+                                is DataState.Data -> state.data.isEmpty()
+                                is DataState.Stale -> state.data.isEmpty()
+                                else -> false
+                            }
                         else -> false
                     }
                 }
@@ -248,6 +255,7 @@ class ItemDetailsViewModel(
                 loadPlaylistTracks(item.itemId, item.provider)
             }
             is RadioStation -> {
+                loadRadioVersions(item)
                 val supportsRadioTracks = mediaItemRepository.supportsRadioTracks()
 
                 _state.update {
@@ -398,24 +406,26 @@ class ItemDetailsViewModel(
         viewModelScope.launch {
             setPlayableItemsState(DataState.Loading())
 
-            try {
-                val tracks = mediaItemRepository.fetchMediaItems(
-                    Request.RadioStation.getTracks(
-                        itemId = itemId,
-                        providerInstanceIdOrDomain = provider,
-                    ),
-                )
-                    .getOrNull()
-                    ?.filterIsInstance<PlayableItem>()
-                    ?: emptyList()
+            val result = mediaItemRepository.fetchMediaItems(
+                Request.RadioStation.getTracks(
+                    itemId = itemId,
+                    providerInstanceIdOrDomain = provider,
+                ),
+            )
 
-                setPlayableItems(tracks, SubItemContext.RADIO_TRACKS)
-            } catch (e: Exception) {
-                Logger.e("Failed to load radio tracks", e)
+            val items = result.getOrElse { error ->
+                if (error is CancellationException) throw error
+
+                Logger.e("Failed to load radio tracks", error)
                 setPlayableItemsState(DataState.Error())
+                return@launch
             }
+
+            val tracks = items.filterIsInstance<PlayableItem>()
+            setPlayableItems(tracks, SubItemContext.RADIO_TRACKS)
         }
     }
+
 
     private fun loadPodcastEpisodes(itemId: String, provider: String) {
         viewModelScope.launch {
@@ -515,6 +525,22 @@ class ItemDetailsViewModel(
             _state.update { it.copy(lyrics = lyrics) }
         }
     }
+
+    private fun loadRadioVersions(radio: RadioStation) {
+        _state.update {
+            it.copy(radioVersionsState = DataState.Loading())
+        }
+
+        viewModelScope.launch {
+            val versions = fetchList<RadioStation>(
+                Request.RadioStation.getVersions(radio.itemId, radio.provider)
+            )
+            _state.update {
+                it.copy(radioVersionsState = versions)
+            }
+        }
+    }
+
 
     private suspend inline fun <reified T : AppMediaItem> fetchList(request: Request): DataState<List<T>> =
         mediaItemRepository.fetchMediaItems(request).fold(
@@ -755,6 +781,7 @@ private fun ItemDetailsTab.subState(
         -> state.albumsState
 
     ItemDetailsTab.TRACK_VERSIONS -> state.trackVersionsState
+    ItemDetailsTab.RADIO_VERSIONS -> state.radioVersionsState
     ItemDetailsTab.SIMILAR_TRACKS -> state.similarTracksState
     ItemDetailsTab.ALBUM_TRACKS,
     ItemDetailsTab.PLAYLIST_ITEMS,
