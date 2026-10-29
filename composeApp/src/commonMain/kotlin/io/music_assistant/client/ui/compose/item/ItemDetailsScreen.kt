@@ -280,11 +280,12 @@ fun ItemDetails(
                             is MediaCollection,
                             is Genre,
                             is Track,
-                            is RadioStation -> {
+                            is RadioStation,
+                            -> {
                                 onNavigateToItem(
                                     item.itemId,
                                     item.mediaType,
-                                    item.provider
+                                    item.provider,
                                 )
                             }
                             else -> Unit
@@ -324,7 +325,8 @@ private fun ItemDetailsTab.stringResource(): StringResource? = when (this) {
     ItemDetailsTab.PODCAST_EPISODES -> Res.string.media_type_episodes
     ItemDetailsTab.COLLECTION_ITEMS -> Res.string.media_type_audiobooks
     ItemDetailsTab.TRACK_VERSIONS,
-    ItemDetailsTab.RADIO_VERSIONS -> Res.string.item_tab_versions
+    ItemDetailsTab.RADIO_VERSIONS,
+    -> Res.string.item_tab_versions
     ItemDetailsTab.SIMILAR_TRACKS -> Res.string.item_tab_similar_tracks
     else -> viewMediaType?.stringResource()
 }

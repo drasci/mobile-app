@@ -6,7 +6,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ItemDetailsRadioTracksVisibilityTest {
-
     private fun state(
         isEndless: Boolean?,
         isDynamic: Boolean = false,
@@ -19,6 +18,7 @@ class ItemDetailsRadioTracksVisibilityTest {
         playableItemsState = DataState.NoData(),
         radioTracksSupported = supported,
     )
+
     @Test
     fun `radio tracks tab appears for supported finite non-dynamic station`() {
         assertTrue(

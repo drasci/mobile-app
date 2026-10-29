@@ -9,8 +9,8 @@ import io.music_assistant.client.data.model.client.items.Genre
 import io.music_assistant.client.data.model.client.items.MediaCollection
 import io.music_assistant.client.data.model.client.items.Playlist
 import io.music_assistant.client.data.model.client.items.Podcast
-import io.music_assistant.client.data.model.client.items.Track
 import io.music_assistant.client.data.model.client.items.RadioStation
+import io.music_assistant.client.data.model.client.items.Track
 
 /**
  * The tabs an item-details screen can show. [sortContext] drives the sort chip (null = no sorting);
@@ -34,8 +34,6 @@ enum class ItemDetailsTab(
     TRACK_VERSIONS(null, MediaType.TRACK),
     SIMILAR_TRACKS(null, MediaType.TRACK),
 }
-
-
 fun tabsFor(item: AppMediaItem): List<ItemDetailsTab> = when (item) {
     is Album -> listOf(ItemDetailsTab.ALBUM_TRACKS)
     is Playlist -> listOf(ItemDetailsTab.PLAYLIST_ITEMS)
@@ -54,7 +52,6 @@ fun tabsFor(item: AppMediaItem): List<ItemDetailsTab> = when (item) {
     )
     else -> emptyList()
 }
-
 
 /**
  * True for the item types that [ItemDetailsViewModel] loads (its `getItemById`); keep both in step.

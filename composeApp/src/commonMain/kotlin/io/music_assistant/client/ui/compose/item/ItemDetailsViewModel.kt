@@ -398,7 +398,6 @@ class ItemDetailsViewModel(
         }
     }
 
-
     private fun loadRadioTracks(
         itemId: String,
         provider: String,
@@ -425,7 +424,6 @@ class ItemDetailsViewModel(
             setPlayableItems(tracks, SubItemContext.RADIO_TRACKS)
         }
     }
-
 
     private fun loadPodcastEpisodes(itemId: String, provider: String) {
         viewModelScope.launch {
@@ -533,14 +531,13 @@ class ItemDetailsViewModel(
 
         viewModelScope.launch {
             val versions = fetchList<RadioStation>(
-                Request.RadioStation.getVersions(radio.itemId, radio.provider)
+                Request.RadioStation.getVersions(radio.itemId, radio.provider),
             )
             _state.update {
                 it.copy(radioVersionsState = versions)
             }
         }
     }
-
 
     private suspend inline fun <reified T : AppMediaItem> fetchList(request: Request): DataState<List<T>> =
         mediaItemRepository.fetchMediaItems(request).fold(
